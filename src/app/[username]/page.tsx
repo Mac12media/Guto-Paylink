@@ -11,6 +11,7 @@ type PageProps = {
   searchParams?: SearchParams | Promise<SearchParams>;
 };
 
+/* ---------------- helpers ---------------- */
 const isPromise = (v: unknown): v is Promise<unknown> =>
   typeof (v as any)?.then === "function";
 
@@ -25,28 +26,45 @@ async function resolveSearchParams(
 }
 
 function safeDecode(input: string): string {
-  try { return decodeURIComponent(input); } catch { return input; }
+  try {
+    return decodeURIComponent(input);
+  } catch {
+    return input;
+  }
 }
+
+/** "%40sonde51" -> "@sonde51" -> "sonde51" (only a-z0-9._-) */
 function normalizeHandleParam(input: string) {
-  // "%40sonde51" -> "@sonde51" -> "sonde51"
   let s = safeDecode(input).trim();
   s = s.replace(/^@/i, "").replace(/^%40/i, "");
   return s.toLowerCase().replace(/[^a-z0-9._-]/g, "");
 }
+
+/** "marigo65" -> "Marigo65", "john.doe" -> "John Doe" */
 function displayNameFromHandle(handle: string) {
   const spaced = handle.replace(/[_.-]+/g, " ");
-  return spaced.replace(/\b\w/g, c => c.toUpperCase()) || "User";
+  return spaced.replace(/\b\w/g, (c) => c.toUpperCase()) || "User";
 }
 
-async function fetchUserForSEO(handle: string) {
+/** Parse ?a= amount; accepts "125000" or "125,000" */
+function parseAmount(sp?: SearchParams): number | undefined {
+  if (!sp) return undefined;
+  const raw = Array.isArray(sp.a) ? sp.a[0] : sp.a;
+  if (!raw) return undefined;
+  const digits = String(raw).replace(/[^\d]/g, "");
+  if (!digits) return undefined;
+  const n = Number(digits);
+  return Number.isFinite(n) && n > 0 ? n : undefined;
+}
+
+async function fetchUserPublic(handle: string) {
   const apiBase = process.env.API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE_URL;
   if (!apiBase || !handle) return null;
 
   try {
-    const res = await fetch(
-      `${apiBase}/api/profiles/by-username/${encodeURIComponent(handle)}`,
-      { cache: "no-store" }
-    );
+    const res = await fetch(`${apiBase}/api/profiles/by-username/${encodeURIComponent(handle)}`, {
+      cache: "no-store",
+    });
     if (!res.ok) return null;
     const json = await res.json().catch(() => null);
     return json?.data ?? null;
@@ -55,62 +73,56 @@ async function fetchUserForSEO(handle: string) {
   }
 }
 
-/* ---------- DYNAMIC SEO HERE ---------- */
+/* ---------------- dynamic SEO ---------------- */
 export async function generateMetadata(props: PageProps): Promise<Metadata> {
   const { username } = await resolveParams(props.params);
   const sp = await resolveSearchParams(props.searchParams);
 
   const handle = normalizeHandleParam(username);
-  const apiUser = await fetchUserForSEO(handle);
+  const apiUser = await fetchUserPublic(handle);
 
   const name = apiUser?.name || displayNameFromHandle(handle);
-  const avatar = apiUser?.logo as string | undefined;
+  const amount = parseAmount(sp);
+  const prettyAmount = amount
+    ? new Intl.NumberFormat("en-UG", { maximumFractionDigits: 0 }).format(amount)
+    : undefined;
 
-  
-  // Optional: include amount from ?a= in the SEO
-  const raw = sp.a;
-  const first = Array.isArray(raw) ? raw[0] : raw;
-  const parsed = first ? Number(first) : NaN;
-  const amount = Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
-
-  const title = amount
-    ? `Pay ${name} • UGX ${amount.toLocaleString()}`
-    : `Pay ${name} (@${handle})`;
-
+  const title = amount ? `Pay ${name} • UGX ${prettyAmount}` : `Pay ${name} (@${handle})`;
   const description = amount
-    ? `Send UGX ${amount.toLocaleString()} securely to ${name} on Paylink.`
-    : `Send secure payments to ${name} on Paylink.`;
+    ? `Send UGX ${prettyAmount} securely to ${name} on Guto Paylink.`
+    : `Send secure payments to ${name} on Guto Paylink.`;
 
   const canonicalPath = `/@${handle}`;
+  const imagePath = `/${encodeURIComponent("@" + handle)}/opengraph-image${
+    amount ? `?a=${amount}` : ""
+  }`;
 
-  // inside generateMetadata(...)
-const imagePath = `/${encodeURIComponent("@"+handle)}/opengraph-image${
-  amount ? `?a=${amount}` : ""
-}`;
-
-return {
-  title,
-  description,
-  alternates: { canonical: `/@${handle}` },
-  openGraph: {
+  return {
     title,
     description,
-    url: `/@${handle}`,
-    siteName: "Guto",
-    type: "profile",
-    images: [{ url: imagePath, width: 1200, height: 630, alt: title }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title,
-    description,
-    images: [imagePath],
-  },
-};
-
+    alternates: { canonical: canonicalPath },
+    robots: { index: true, follow: true },
+    openGraph: {
+      title,
+      description,
+      url: canonicalPath,
+      siteName: "Guto",
+      type: "profile",
+      locale: "en_US",
+      images: [{ url: imagePath, width: 1200, height: 630, alt: title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [imagePath], // reuse same dynamic image for all socials
+    },
+    // optional polish
+    formatDetection: { telephone: false, email: false, address: false },
+  };
 }
 
-/* ---------- PAGE RENDER (unchanged) ---------- */
+/* ---------------- page render ---------------- */
 export default async function Page(props: PageProps) {
   const params = await resolveParams(props.params);
   const search = await resolveSearchParams(props.searchParams);
@@ -118,6 +130,7 @@ export default async function Page(props: PageProps) {
   const safeHandle = normalizeHandleParam(params.username);
   const apiBase = process.env.API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE_URL;
 
+  // Fallback user if API missing/404/error
   let user: UserProfile = {
     name: displayNameFromHandle(safeHandle),
     handle: `@${safeHandle || "user"}`,
@@ -139,18 +152,16 @@ export default async function Page(props: PageProps) {
             name: data.name || displayNameFromHandle(safeHandle),
             handle: `@${data.username || safeHandle}`,
             avatarUrl: data.logo || undefined,
-            verified: true,
+            verified: true, // adjust if you have a real flag
           };
         }
       }
-    } catch {}
+      // Non-OK/404 -> keep fallback without throwing
+    } catch {
+      // Network/parse error -> keep fallback
+    }
   }
 
-  const raw = search.a;
-  const first = Array.isArray(raw) ? raw[0] : raw;
-  const parsed = first ? Number(first) : NaN;
-  const amount: number | undefined =
-    Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
-
+  const amount = parseAmount(search);
   return <LandingPage user={user} amount={amount} />;
 }
