@@ -73,8 +73,15 @@ async function fetchUserPublic(handle: string) {
   }
 }
 
+function getSite() {
+  const env =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "");
+  return env.replace(/\/+$/, "");
+}
+
 function absoluteUrl(path: string) {
-  const base = (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/+$/, "");
+  const base = getSite() || "http://localhost:3000"; // local fallback
   return `${base}${path.startsWith("/") ? "" : "/"}${path}`;
 }
 
@@ -104,47 +111,40 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
     ? `Send UGX ${prettyAmount} securely to ${name} on Guto Paylink.`
     : `Send secure payments to ${name} on Guto Paylink.`;
 
-  const canonicalPath = `/@${handle}`;
-  const imagePath = `/${encodeURIComponent("@"+handle)}/opengraph-image${
-    prettyAmount ? `?a=${digits}` : ""
-  }`;
-  const imageAbs = absoluteUrl(imagePath);
-  const canonicalAbs = absoluteUrl(canonicalPath);
+const canonicalPath = `/@${handle}`;
+const imagePath = `/${encodeURIComponent("@"+handle)}/opengraph-image${prettyAmount ? `?a=${digits}` : ""}`;
 
-  return {
+const canonicalAbs = absoluteUrl(canonicalPath);
+const imageAbs = absoluteUrl(imagePath);
+
+return {
+  title,
+  description,
+  alternates: { canonical: canonicalAbs }, // absolute
+  robots: { index: true, follow: true },
+  openGraph: {
     title,
     description,
-    alternates: { canonical: canonicalPath },
-    robots: { index: true, follow: true },
-
-    // Open Graph (FB/Instagram/LinkedIn/WhatsApp/Slack/Discord/etc.)
-    openGraph: {
-      title,
-      description,
-      url: canonicalPath,
-      siteName: "Guto",
-      type: "profile",
-      locale: "en_US",
-      images: [
-        {
-          url: imageAbs,          // absolute URL
-          secureUrl: imageAbs,    // explicitly HTTPS
-          type: "image/png",
-          width: 1200,
-          height: 630,
-          alt: title,
-        },
-      ],
-    },
-
-    // Twitter/X (uses same dynamic image)
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-      images: [imageAbs], // absolute
-    },
-  };
+    url: canonicalAbs,                      // absolute
+    siteName: "Guto",
+    type: "profile",
+    locale: "en_US",
+    images: [{
+      url: imageAbs,                        // absolute
+      secureUrl: imageAbs,                  // absolute HTTPS
+      type: "image/png",
+      width: 1200,
+      height: 630,
+      alt: title,
+    }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title,
+    description,
+    images: [imageAbs],                     // absolute
+  },
+};
 }
 
 /* ---------------- page render ---------------- */
