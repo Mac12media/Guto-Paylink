@@ -15,7 +15,6 @@ export default function Powered() {
 				<ResendLogo />
 				<VercelLogo />
 				<NextjsLogo className="!dark:text-foreground" />
-				<UpstashLogo />
 			</div>
 		</div>
 	);

@@ -19,7 +19,7 @@ export function LandingPage( ) {
         className="fixed inset-0 z-50 pointer-events-none"
         manualstart={true}
       />
-      <Hero initialAmount={125000} user={{
+      <Hero initialAmount={0} user={{
     name: "Marigold",
     handle: "@marigo65",   // or just "jane.doe"
     avatarUrl: undefined,
