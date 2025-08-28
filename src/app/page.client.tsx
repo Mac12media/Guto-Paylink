@@ -9,7 +9,7 @@ import Hero from "~/components/hero";
 import { Confetti, ConfettiRef } from "~/components/magicui/confetti";
 import Powered from "~/components/powered";
 
-export function LandingPage({ waitlistPeople }: { waitlistPeople: number }) {
+export function LandingPage( ) {
   const confettiRef = useRef<ConfettiRef>(null);
 
   return (
@@ -19,7 +19,12 @@ export function LandingPage({ waitlistPeople }: { waitlistPeople: number }) {
         className="fixed inset-0 z-50 pointer-events-none"
         manualstart={true}
       />
-      <Hero waitlistPeople={waitlistPeople} />
+      <Hero initialAmount={125000} user={{
+    name: "Marigold",
+    handle: "@marigo65",   // or just "jane.doe"
+    avatarUrl: undefined,
+    verified: true,
+  }} />
       <Demo videoSrc="/demo.mp4" thumbnailSrc="/demo.png" />
       <Powered />
       <Faq />

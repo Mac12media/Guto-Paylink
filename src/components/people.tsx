@@ -97,7 +97,7 @@ export default function People({
 				>
 					{formattedCount}+
 				</motion.span>{" "}
-				others on the waitlist
+				others on Guto
 			</motion.div>
 		</motion.div>
 	);
