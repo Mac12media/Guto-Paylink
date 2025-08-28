@@ -1,5 +1,5 @@
 // src/app/layout.tsx
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Inter_Tight } from "next/font/google";
 import { Toaster } from "sonner";
 
@@ -19,32 +19,47 @@ const interTight = Inter_Tight({
 });
 
 export const metadata: Metadata = {
-  // 👇 makes relative URLs in page metadata absolute
+  // Ensures relative URLs in page metadata become absolute
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
 
-  // 👇 pages can set `title`; this template wraps it
+  // Page-level titles slot into this template
   title: {
     default: "Guto — Mobile Money Wallet",
     template: "%s | Guto",
   },
   description: "Guto",
 
-  // sensible defaults (page-level generateMetadata can override)
+  // Sensible global fallbacks; per-page generateMetadata will override
   openGraph: {
     siteName: "Guto",
     type: "website",
     locale: "en_US",
-    images: [{ url: "/opengraph-image.png", width: 1200, height: 630, alt: "Guto" }],
+    images: [
+      { url: "/opengraph-image.png", width: 1200, height: 630, alt: "Guto" },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     images: ["/twitter-image.png"],
   },
+  robots: { index: true, follow: true },
   icons: {
     icon: "/favicon.ico",
     apple: "/apple-touch-icon.png",
   },
-  robots: { index: true, follow: true },
+ keywords: ["guto", "mobile money", "payments", "paylink"],
+  // verification: { google: "..." },
+};
+
+// Helpful for mobile viewport + system theme colors
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0b0f14" },
+  ],
+  width: "device-width",
+  initialScale: 1,
+  colorScheme: "light dark",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

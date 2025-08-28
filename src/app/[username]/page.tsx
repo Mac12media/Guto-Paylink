@@ -73,7 +73,13 @@ async function fetchUserPublic(handle: string) {
   }
 }
 
-/* ---------------- dynamic SEO ---------------- */
+function absoluteUrl(path: string) {
+  const base =
+    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, "") ||
+    "https://example.com"; // <-- set this env to your real HTTPS origin
+  return `${base}${path.startsWith("/") ? "" : "/"}${path}`;
+}
+
 export async function generateMetadata(props: PageProps): Promise<Metadata> {
   const { username } = await resolveParams(props.params);
   const sp = await resolveSearchParams(props.searchParams);
@@ -82,26 +88,37 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
   const apiUser = await fetchUserPublic(handle);
 
   const name = apiUser?.name || displayNameFromHandle(handle);
-  const amount = parseAmount(sp);
-  const prettyAmount = amount
-    ? new Intl.NumberFormat("en-UG", { maximumFractionDigits: 0 }).format(amount)
-    : undefined;
 
-  const title = amount ? `Pay ${name} • UGX ${prettyAmount}` : `Pay ${name} (@${handle})`;
-  const description = amount
+  // read ?a= and keep digits only so 125,000 works
+  const raw = Array.isArray(sp.a) ? sp.a[0] : sp.a;
+  const digits = raw ? String(raw).replace(/[^\d]/g, "") : "";
+  const amount = digits ? Number(digits) : undefined;
+  const prettyAmount =
+    amount && Number.isFinite(amount) && amount > 0
+      ? new Intl.NumberFormat("en-UG", { maximumFractionDigits: 0 }).format(amount)
+      : undefined;
+
+  const title = prettyAmount
+    ? `Pay ${name} • UGX ${prettyAmount}`
+    : `Pay ${name} (@${handle})`;
+  const description = prettyAmount
     ? `Send UGX ${prettyAmount} securely to ${name} on Guto Paylink.`
     : `Send secure payments to ${name} on Guto Paylink.`;
 
   const canonicalPath = `/@${handle}`;
-  const imagePath = `/${encodeURIComponent("@" + handle)}/opengraph-image${
-    amount ? `?a=${amount}` : ""
+  const imagePath = `/${encodeURIComponent("@"+handle)}/opengraph-image${
+    prettyAmount ? `?a=${digits}` : ""
   }`;
+  const imageAbs = absoluteUrl(imagePath);
+  const canonicalAbs = absoluteUrl(canonicalPath);
 
   return {
     title,
     description,
     alternates: { canonical: canonicalPath },
     robots: { index: true, follow: true },
+
+    // Open Graph (FB/Instagram/LinkedIn/WhatsApp/Slack/Discord/etc.)
     openGraph: {
       title,
       description,
@@ -109,16 +126,25 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
       siteName: "Guto",
       type: "profile",
       locale: "en_US",
-      images: [{ url: imagePath, width: 1200, height: 630, alt: title }],
+      images: [
+        {
+          url: imageAbs,          // absolute URL
+          secureUrl: imageAbs,    // explicitly HTTPS
+          type: "image/png",
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
     },
+
+    // Twitter/X (uses same dynamic image)
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: [imagePath], // reuse same dynamic image for all socials
+      images: [imageAbs], // absolute
     },
-    // optional polish
-    formatDetection: { telephone: false, email: false, address: false },
   };
 }
 
