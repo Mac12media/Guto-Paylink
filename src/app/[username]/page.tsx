@@ -74,11 +74,10 @@ async function fetchUserPublic(handle: string) {
 }
 
 function absoluteUrl(path: string) {
-  const base =
-    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, "") ||
-    "https://example.com"; // <-- set this env to your real HTTPS origin
+  const base = (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/+$/, "");
   return `${base}${path.startsWith("/") ? "" : "/"}${path}`;
 }
+
 
 export async function generateMetadata(props: PageProps): Promise<Metadata> {
   const { username } = await resolveParams(props.params);
