@@ -1,11 +1,34 @@
-import { LandingPage } from "./page.client";
-import { connection } from "next/server";
-import { getNotionDatabaseRowCount } from "~/lib/utils";
+// app/page.tsx
+import LandingPage, { type UserProfile } from "./page.client";
 
-export const dyamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 
-export default async function Home() {
-  
+type SearchParams = Record<string, string | string[] | undefined>;
+type PageProps = { searchParams?: SearchParams | Promise<SearchParams> };
 
-  return <LandingPage  />;
+// Helper to support both sync and async searchParams across Next versions
+async function resolveSearchParams(
+  sp?: SearchParams | Promise<SearchParams>
+): Promise<SearchParams> {
+  return sp && typeof (sp as any).then === "function"
+    ? await (sp as Promise<SearchParams>)
+    : (sp ?? {});
+}
+
+export default async function Home({ searchParams }: PageProps) {
+  const params = await resolveSearchParams(searchParams);
+
+  const raw = params.a;
+  const first = Array.isArray(raw) ? raw[0] : raw;
+  const parsed = first ? Number(first) : NaN;
+  const amount: number | undefined =
+    Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+
+  const user: UserProfile = {
+    name: "Marigold",
+    handle: "@marigo65",
+    verified: true,
+  };
+
+  return <LandingPage user={user} amount={amount} />;
 }

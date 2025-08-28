@@ -9,7 +9,20 @@ import Hero from "~/components/hero";
 import { Confetti, ConfettiRef } from "~/components/magicui/confetti";
 import Powered from "~/components/powered";
 
-export function LandingPage( ) {
+// Keep this in sync with what <Hero /> expects
+export type UserProfile = {
+  name: string;
+  handle?: string;
+  avatarUrl?: string;
+  verified?: boolean;
+};
+
+type LandingPageProps = {
+  user: UserProfile;     // provided by the caller
+  amount?: number;       // provided by the caller (UGX)
+};
+
+export function LandingPage({ user, amount = 0 }: LandingPageProps) {
   const confettiRef = useRef<ConfettiRef>(null);
 
   return (
@@ -19,12 +32,10 @@ export function LandingPage( ) {
         className="fixed inset-0 z-50 pointer-events-none"
         manualstart={true}
       />
-      <Hero initialAmount={0} user={{
-    name: "Marigold",
-    handle: "@marigo65",   // or just "jane.doe"
-    avatarUrl: undefined,
-    verified: true,
-  }} />
+
+      {/* Pass through values received from parent */}
+      <Hero initialAmount={amount} user={user} />
+
       <Demo videoSrc="/demo.mp4" thumbnailSrc="/demo.png" />
       <Powered />
       <Faq />
@@ -32,3 +43,5 @@ export function LandingPage( ) {
     </main>
   );
 }
+
+export default LandingPage;
