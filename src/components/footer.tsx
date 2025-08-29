@@ -6,28 +6,30 @@ export default function Footer() {
       <div className="flex flex-row justify-between">
         <ul className="flex flex-row gap-4">
           <li className="dark:text-muted-foreground dark:hover:text-foreground cursor-pointer">
-            Built using Next.js 15
+            <Link href="https://guto.app">
+              More Info
+            </Link>
           </li>
           <li className="dark:text-muted-foreground dark:hover:text-foreground">
             •
           </li>
           <li className="dark:text-muted-foreground dark:hover:text-foreground">
-            <Link href="https://github.com/idee8/waitly">
-              Get this template
+            <Link href="https://onelink.to/m7knrf">
+              Create a Paylink
             </Link>
           </li>
           <li className="dark:text-muted-foreground dark:hover:text-foreground">
             •
           </li>
           <li className="dark:text-muted-foreground dark:hover:text-foreground cursor-pointer">
-            <Link href="https://kofi.com/idee8">Become a Sponsor</Link>
+            <Link href="mailto:support@guto.app">Contact support</Link>
           </li>
         </ul>
       </div>
       <div>
         <p className="text-sm text-muted-foreground">
-          &copy; {new Date().getFullYear()} Crafted by{" "}
-          <Link href="https://idee8.agency" className="font-semibold text-foreground">Idee8</Link>
+          &copy; {new Date().getFullYear()} Created by{" "}
+          <Link href="https://guto.app" className="font-semibold text-foreground">Guto</Link>
         </p>
       </div>
     </footer>
