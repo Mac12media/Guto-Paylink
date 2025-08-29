@@ -110,7 +110,7 @@ export default function Demo({
 							</motion.button>
 
 							{/* Text below the play button */}
-							<p className="text-gray-300 text-sm">See how wait works</p>
+							<p className="text-gray-300 text-sm">See how Guto Paylink works</p>
 						</div>
 
 						{/* CRT scan lines effect */}

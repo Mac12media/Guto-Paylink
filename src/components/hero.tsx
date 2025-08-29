@@ -4,6 +4,7 @@ import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import People from "./people";
 import { Logo } from "./svgs";
 import Form from "./form";
+import Link from "next/link";
 
 export type UserProfile = {
   name: string;
@@ -331,7 +332,10 @@ export default function Hero({
       {/* Brand + region pill */}
       <div className="flex flex-col items-center justify-center gap-6 mb-2">
         <div className="hidden sm:block">
+                   <Link href="https://www.guto.app/">
+
           <Logo />
+         </Link>
         </div>
         <div
           className="flex items-center gap-3 rounded-full border border-border px-4 py-1.5 relative"
@@ -552,16 +556,23 @@ export default function Hero({
 
       {/* Store badges (responsive) */}
       <div className="flex flex-wrap items-center justify-center gap-4">
-        <img
+         <Link href="https://apps.apple.com/ug/app/guto/id6744040570">
+          <img
           src="/appstore.png"
           alt="appstore"
           className="h-12 sm:h-14 md:h-16 w-auto object-contain"
         />
-        <img
+            </Link>
+
+             <Link href="https://play.google.com/store/apps/details?id=com.guto.app">
+               <img
           src="/googleplay.png"
           alt="googleplay"
           className="h-12 sm:h-14 md:h-16 w-auto object-contain"
         />
+            </Link>
+       
+      
       </div>
 
       {/* Hidden live region for copy status (extra SR feedback) */}
