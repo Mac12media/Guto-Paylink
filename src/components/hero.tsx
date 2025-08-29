@@ -459,7 +459,61 @@ export default function Hero({
           </h2>
         ) : (
           <h2 className="text-2xl font-bold text-foreground">
-            {isSuccess ? `Payment was sent to ${user.name}` : `Paying ${user.name}`}
+            {isSuccess ? <div className="w-full max-w-xl">
+          <div className="rounded-2xl border bg-white/70 dark:bg-neutral-950/70 backdrop-blur p-4 sm:p-6 shadow-sm">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="h-8 w-8 rounded-full bg-[#009e4f] text-black flex items-center justify-center">
+                <CheckIcon className="h-5 w-5" />
+              </div>
+              <h3 className="text-lg font-semibold">Payment receipt ready</h3>
+            </div>
+
+            <p className="text-sm text-muted-foreground mb-4">
+              Share or save this image as your receipt. It includes the amount, recipient,
+              time, and a reference.
+            </p>
+
+            <div className="rounded-xl border bg-background overflow-hidden">
+              {/* Live preview (SVG or PNG) */}
+              {receiptPreviewUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={receiptPreviewUrl}
+                  alt="Receipt preview"
+                  className="w-full h-auto"
+                />
+              ) : (
+                <div className="p-12 text-center text-sm text-muted-foreground">
+                  Generating receipt…
+                </div>
+              )}
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={handleShareReceipt}
+                disabled={!receiptPngUrl}
+                className="inline-flex items-center justify-center rounded-xl bg-[#009e4f] text-black px-4 py-2 text-sm font-semibold disabled:opacity-60"
+              >
+                Share image
+              </button>
+              <button
+                type="button"
+                onClick={handleDownloadReceipt}
+                disabled={!receiptPngUrl}
+                className="inline-flex items-center justify-center rounded-xl border px-4 py-2 text-sm font-medium disabled:opacity-60"
+              >
+                Download PNG
+              </button>
+              {reference && (
+                <span className="ml-auto text-xs text-muted-foreground">
+                  Ref: {reference}
+                </span>
+              )}
+            </div>
+          </div>
+        </div> : `Paying ${user.name}`}
           </h2>
         )}
         <p className="text-sm text-muted-foreground text-center max-w-md">

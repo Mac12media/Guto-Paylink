@@ -219,7 +219,7 @@ export default function Form({
             />
             <button
               type="submit"
-              className="absolute font-semibold top-0 bottom-0 bg-[#009e4f] flex justify-center items-center cursor-pointer dark:text-black px-5 py-2 m-2 rounded-[12px] hover:bg-opacity-90 transition-all disabled:opacity-50"
+              className="absolute font-semibold top-0 bottom-0 bg-[#009e4f] flex justify-center items-center cursor-pointer dark:text-black  text-white px-5 py-2 m-2 rounded-[12px] hover:bg-opacity-90 transition-all disabled:opacity-50"
               disabled={loading || (!fixedAmountMode && (!amount || amount <= 0))}
             >
               Continue
@@ -252,7 +252,7 @@ export default function Form({
             />
             <button
               type="submit"
-              className="absolute font-semibold top-0 bottom-0 bg-[#009e4f] flex justify-center items-center cursor-pointer dark:text-black px-5 py-2 m-2 rounded-[12px] hover:bg-opacity-90 transition-all disabled:opacity-50"
+              className="absolute font-semibold top-0 bottom-0 bg-[#009e4f] flex justify-center items-center cursor-pointer dark:text-black text-white px-5 py-2 m-2 rounded-[12px] hover:bg-opacity-90 transition-all disabled:opacity-50"
               disabled={loading}
             >
               {loading ? "Checking..." : "Continue"}
@@ -284,13 +284,13 @@ export default function Form({
             />
             <button
               type="submit"
-              className="absolute font-semibold top-0 bottom-0 bg-[#009e4f] flex justify-center items-center cursor-pointer dark:text-black px-5 py-2 m-2 rounded-[12px] hover:bg-opacity-90 transition-all disabled:opacity-50"
+              className="absolute font-semibold top-0 bottom-0 bg-[#009e4f] flex justify-center items-center cursor-pointer dark:text-black text-white px-5 py-2 m-2 rounded-[12px] hover:bg-opacity-90 transition-all disabled:opacity-50"
               disabled={loading}
             >
               {loading ? (
                 <span className="flex items-center">
                   <svg
-                    className="animate-spin -ml-1 mr-2 h-4 w-4 dark:text-black"
+                    className="animate-spin -ml-1 mr-2 h-4 w-4  text-white dark:text-black"
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
