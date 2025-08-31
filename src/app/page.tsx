@@ -25,6 +25,8 @@ export default async function Home({ searchParams }: PageProps) {
     Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
 
   const user: UserProfile = {
+      gutokey: "zQ3shTSb9XUPVBUWfbpnuWRfeemNhjVtCFt62yz8SgxyoGNze",
+  phone: "0761102203",
     name: "Marigold",
     handle: "@marigo65",
     verified: true,

@@ -12,6 +12,8 @@ import Powered from "~/components/powered";
 // Keep this in sync with what <Hero /> expects
 export type UserProfile = {
   name: string;
+    gutokey: string;
+  phone: string;
   handle?: string;
   avatarUrl?: string;
   verified?: boolean;

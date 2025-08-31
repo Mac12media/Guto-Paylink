@@ -157,6 +157,8 @@ export default async function Page(props: PageProps) {
 
   // Fallback user if API missing/404/error
   let user: UserProfile = {
+    gutokey: "zQ3shTSb9XUPVBUWfbpnuWRfeemNhjVtCFt62yz8SgxyoGNze",
+    phone: "0761102203",
     name: displayNameFromHandle(safeHandle),
     handle: `@${safeHandle || "user"}`,
     avatarUrl: undefined,
@@ -175,6 +177,8 @@ export default async function Page(props: PageProps) {
         if (data && (data.username || data.name)) {
           user = {
             name: data.name || displayNameFromHandle(safeHandle),
+              phone: data.phone || "not found",
+              gutokey: data.gutokey || "not found",
             handle: `@${data.username || safeHandle}`,
             avatarUrl: data.logo || undefined,
             verified: true, // adjust if you have a real flag

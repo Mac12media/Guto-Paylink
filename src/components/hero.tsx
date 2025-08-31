@@ -8,6 +8,8 @@ import Link from "next/link";
 
 export type UserProfile = {
   name: string;
+  gutokey: string;
+  phone: string;
   handle?: string; // e.g. "jane.doe" or "@jane.doe"
   avatarUrl?: string;
   verified?: boolean;
@@ -537,6 +539,11 @@ export default function Hero({
               initialAmount={initialAmount}
               startOnAmount={!(typeof initialAmount === "number" && initialAmount > 0)}
               onSuccessChange={setIsSuccess}
+              gutokey={user.gutokey}
+  recipientMobile={user.phone}        // e.g. "07XXXXXXXX" or "2567XXXXXXXX"
+  recipientName={user.name}
+  country="UG"
+  direction="paylink"
             />
           </div>
           <div className="px-4 pb-4 sm:px-6 sm:pb-6 text-xs text-muted-foreground flex items-center justify-between">
