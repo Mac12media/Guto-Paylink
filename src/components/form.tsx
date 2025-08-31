@@ -35,6 +35,17 @@ interface FormProps {
 
   /** Optional: override status endpoint base (defaults to prod) */
   statusBaseUrl?: string;     // e.g. "https://api.guto.app/api/transactions"
+
+  /** Fired ONLY when callback confirms api_status === "paid" */
+  onPaid?: (info: {
+    amount: number;
+    tx: string;
+    providerTx?: string | null;
+    paidAtIso: string;
+    payerMsisdn: string;
+    recipientMsisdn: string;
+    recipientName: string;
+  }) => void;
 }
 
 /** Normalize a Ugandan mobile number to "2567XXXXXXXX" (12 digits, no "+") */
@@ -97,10 +108,10 @@ async function fetchGutoName(msisdn: string): Promise<string | null> {
 
 /** Poll the transaction status until api_status === "paid" (or failure/timeout) */
 async function pollUntilPaid(opts: {
-  statusUrl: string;           // full URL to GET
-  intervalMs?: number;         // start interval
-  maxIntervalMs?: number;      // cap interval
-  timeoutMs?: number;          // global timeout
+  statusUrl: string;
+  intervalMs?: number;
+  maxIntervalMs?: number;
+  timeoutMs?: number;
   onTick?: (s: string | undefined) => void;
   signal?: AbortSignal;
 }): Promise<"paid" | "failed" | "timeout"> {
@@ -119,9 +130,7 @@ async function pollUntilPaid(opts: {
   const readStatus = async (): Promise<string | undefined> => {
     const res = await fetch(statusUrl, { cache: "no-store", signal });
     if (!res.ok) {
-      // 404 before callback landed — just treat as pending
-      if (res.status === 404) return "pending";
-      // other non-OK: transient
+      if (res.status === 404) return "pending"; // not yet in DB; keep waiting
       return undefined;
     }
     const js = await res.json().catch(() => ({} as any));
@@ -139,7 +148,7 @@ async function pollUntilPaid(opts: {
     try {
       status = await readStatus();
     } catch {
-      status = undefined; // transient
+      status = undefined;
     }
     onTick?.(status);
 
@@ -155,6 +164,7 @@ async function pollUntilPaid(opts: {
 
 export default function Form({
   onSuccessChange,
+  onPaid,                     // ← added
   initialAmount,
   startOnAmount,
   minAmount = 500,
@@ -176,12 +186,9 @@ export default function Form({
   const [phone, setPhone] = useState<string>("");
   const [accountName, setAccountName] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
-  const [waiting, setWaiting] = useState<boolean>(false); // waiting for callback
+  const [waiting, setWaiting] = useState<boolean>(false);
   const [txStatus, setTxStatus] = useState<string>("pending");
-
-  const [carrier, setCarrier] = useState<ReturnType<typeof carrierFromMsisdn>>(
-    "Unknown"
-  );
+  const [carrier, setCarrier] = useState<ReturnType<typeof carrierFromMsisdn>>("Unknown");
 
   const fixedAmountMode =
     !startAtAmount && typeof initialAmount === "number" && initialAmount > 0;
@@ -236,9 +243,7 @@ export default function Form({
     if (loading || waiting) return;
 
     const normalizedPayer = normalizeUgMobile(phone);
-    const normalizedRecipient = recipientMobile
-      ? normalizeUgMobile(recipientMobile)
-      : null;
+    const normalizedRecipient = recipientMobile ? normalizeUgMobile(recipientMobile) : null;
 
     if (!normalizedPayer) {
       toast.error("Please enter a valid Ugandan mobile number (e.g. 07XXXXXXXX)");
@@ -272,7 +277,7 @@ export default function Form({
         memo: `Deposit for ${gutokey}`,
         gutokey,
         recipient: normalizedRecipient,
-        tx, // ← stable UUID for this session
+        tx, // local UUID
         recipient_name: accountName || recipientName || "",
         direction,
         country,
@@ -286,9 +291,7 @@ export default function Form({
 
       if (!res.ok) {
         let msg = `HTTP error ${res.status}`;
-        try {
-          msg += `: ${await res.text()}`;
-        } catch {}
+        try { msg += `: ${await res.text()}`; } catch {}
         throw new Error(msg);
       }
 
@@ -301,6 +304,10 @@ export default function Form({
         throw new Error(`Send failed: ${message}`);
       }
 
+      // Prefer a provider-level reference if present
+      const providerTxId: string | null =
+        munopay?.provider_reference ?? munopay?.transaction_id ?? null;
+
       // Move into "waiting for callback" mode — DO NOT mark success yet.
       setWaiting(true);
       setTxStatus("pending");
@@ -309,21 +316,19 @@ export default function Form({
         duration: 5000,
       });
 
-      // Begin polling for api_status = "paid"
+      // Poll by gateway transaction id (as requested)
       const ctrl = new AbortController();
       const statusUrl = `${statusBaseUrl.replace(/\/+$/, "")}/${encodeURIComponent(
-         munopay?.transaction_id
+        munopay?.transaction_id
       )}`;
 
       const result = await pollUntilPaid({
         statusUrl,
         intervalMs: 3000,
         maxIntervalMs: 7000,
-        timeoutMs: 180_000, // 3 minutes
+        timeoutMs: 180_000,
         signal: ctrl.signal,
-        onTick: (s) => {
-          if (s) setTxStatus(s);
-        },
+        onTick: (s) => s && setTxStatus(s),
       });
 
       setWaiting(false);
@@ -331,6 +336,17 @@ export default function Form({
       if (result === "paid") {
         onSuccessChange?.(true);
         toast.success("Payment confirmed!");
+
+        onPaid?.({
+          amount,
+          tx,                                   // your local UUID
+          providerTx: providerTxId,             // gateway ref if available
+          paidAtIso: new Date().toISOString(),
+          payerMsisdn: normalizedPayer,
+          recipientMsisdn: normalizedRecipient!,
+          recipientName: accountName || recipientName || "",
+        });
+
         setTimeout(() => {
           confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
         }, 120);
@@ -377,7 +393,7 @@ export default function Form({
                 fixedAmountMode ? "pointer-events-none opacity-80" : ""
               }`}
               required
-              disabled={fixedAmountMode || disabledAll}
+              disabled={disabledAll || fixedAmountMode}
             />
             <button
               type="submit"
@@ -453,7 +469,7 @@ export default function Form({
               className="absolute font-semibold top-0 bottom-0 bg-[#009e4f] flex justify-center items-center cursor-pointer text-white dark:text-black px-5 py-2 m-2 rounded-[12px] hover:bg-opacity-90 transition-all disabled:opacity-50"
               disabled={disabledAll}
             >
-              {loading || waiting ? (
+              {(loading || waiting) ? (
                 <span className="flex items-center">
                   <svg
                     className="animate-spin -ml-1 mr-2 h-4 w-4 text-white dark:text-black"
@@ -463,19 +479,8 @@ export default function Form({
                     aria-hidden="true"
                   >
                     <title>Loading spinner</title>
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    />
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
                   {waiting ? "Waiting…" : "Sending..."}
                 </span>
@@ -500,8 +505,9 @@ export default function Form({
           {step !== "amount" && formattedAmount && `Amount: ${formattedAmount}`}
           {waiting && (
             <span className="ml-1">
-               • Status: {["pending", "approved"].includes(String(txStatus || "").toLowerCase())
- ? "waiting for approval" : txStatus}
+              • Status: {["pending", "approved"].includes(String(txStatus || "").toLowerCase())
+                ? "waiting for approval"
+                : txStatus}
             </span>
           )}
         </div>
