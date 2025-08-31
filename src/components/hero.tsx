@@ -211,6 +211,8 @@ export default function Hero({
   const amountTextPrefill =
     typeof initialAmount === "number" && initialAmount > 0 ? currency.format(initialAmount) : "—";
 
+      const hasName = !!user?.phone && user.phone.trim().length > 0;
+
   const handleCopy = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(paylink);
@@ -317,20 +319,20 @@ export default function Hero({
       </div>
 
       {/* Profile header */}
+       {/* Profile header */}
       <div className="flex flex-col items-center text-center gap-3 max-w-2xl">
-        <div className="h-20 w-20 rounded-full bg-muted overflow-hidden flex items-center justify-center text-xl font-semibold" aria-label={`${user.name} avatar`}>
+        <div className="h-20 w-20 rounded-full bg-muted overflow-hidden flex items-center justify-center text-xl font-semibold" aria-label={`${hasName ? user.name : "Unknown"} avatar`}>
           {user.avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={user.avatarUrl} alt={`${user.name} avatar`} className="h-full w-full object-cover" />
+            <img src={user.avatarUrl} alt={`${hasName ? user.name : "User"} avatar`} className="h-full w-full object-cover" />
           ) : (
-            initialFrom(user.name)
+            initialFrom(user.name || "?")
           )}
         </div>
         <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold">{user.name}</h1>
-          {user.verified && (
+          <h1 className="text-2xl font-bold">{hasName ? user.name : "Profile not available"}</h1>
+          {hasName && user.verified && (
             <span className="inline-flex items-center gap-1 text-primary text-sm" aria-label="Verified account">
-              {/* Verified glyph retained */}
               <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
                 <path d="M12 2.25 14.3 4l2.7-.2 1.2 2.5 2.5 1.2-.2 2.7 1.8 2.3-1.8 2.3.2 2.7-2.5 1.2-1.2 2.5-2.7-.2L12 21.75 9.7 20l-2.7.2-1.2-2.5-2.5-1.2.2-2.7L1.7 12l1.8-2.3-.2-2.7 2.5-1.2L7 3.8l2.7.2L12 2.25Zm-1.2 12.8 5.2-5.2-1.4-1.4-3.8 3.8-1.6-1.6-1.4 1.4 3 3Z" fill="#009e4f"/>
               </svg>
@@ -338,51 +340,52 @@ export default function Hero({
             </span>
           )}
         </div>
+
+        {/* Handle + copy still shown (safe) */}
         <div className="flex items-center gap-3">
-          <span className="rounded-full bg-muted px-3 py-1 text-xs">@{normalizeHandle(user.handle, user.name).replace(/^@/, "")}</span>
+          <span className="rounded-full bg-muted px-3 py-1 text-xs">
+            @{normalizeHandle(user.handle, user.name).replace(/^@/, "")}
+          </span>
           <button
-            onClick={useCallback(async () => {
-              try {
-                await navigator.clipboard.writeText(paylink);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 1500);
-              } catch {}
-            }, [paylink])}
+            onClick={handleCopy}
             className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
             aria-live="polite"
             aria-label={copied ? "Paylink copied" : "Copy paylink"}
           >
-            <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" aria-hidden="true"><path d="M16 1H6a2 2 0 0 0-2 2v12h2V3h10V1Zm3 4H10a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Zm0 16H10V7h9v14Z" fill="currentColor"/></svg>
+            <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" aria-hidden="true">
+              <path d="M16 1H6a2 2 0 0 0-2 2v12h2V3h10V1Zm3 4H10a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Zm0 16H10V7h9v14Z" fill="currentColor"/>
+            </svg>
             {copied ? "Copied" : "Copy paylink"}
           </button>
         </div>
+
         <p className="text-sm text-muted-foreground max-w-md">
-          You are paying {user.name} securely. Payments are protected and your details stay private.
+          {hasName
+            ? <>You are paying {user.name} securely. Payments are protected and your details stay private.</>
+            : <>This paylink isn’t fully set up yet.</>}
         </p>
       </div>
 
       {/* Title + dynamic subtitle */}
       <div className="flex flex-col items-center justify-center gap-2 max-w-2xl">
         {typeof initialAmount === "number" && initialAmount > 0 ? (
-          <h2 className="text-4xl font-extrabold text-foreground">
-            {!isSuccess ? amountTextPrefill : ""}
-          </h2>
+          <h2 className="text-4xl font-extrabold text-foreground">{!isSuccess && hasName ? amountTextPrefill : ""}</h2>
         ) : (
-          <h2 className="text-2xl font-bold text-foreground">
-            {!isSuccess ? `Paying ${user.name}` : ""}
-          </h2>
+          <h2 className="text-2xl font-bold text-foreground">{!isSuccess && hasName ? `Paying ${user.name}` : ""}</h2>
         )}
         <p className="text-sm text-muted-foreground text-center max-w-md">
           {!isSuccess
-            ? (typeof initialAmount === "number" && initialAmount > 0
-                ? "Confirm the details below to send your secure payment."
-                : "Enter the amount and details below to send a secure payment.")
+            ? hasName
+              ? (typeof initialAmount === "number" && initialAmount > 0
+                  ? "Confirm the details below to send your secure payment."
+                  : "Enter the amount and details below to send a secure payment.")
+              : "Ask the recipient to finish setting up their Guto profile."
             : "Payment complete. Share or save your receipt below."}
         </p>
       </div>
 
       {/* Payment form */}
-      {!isSuccess && (
+      {!isSuccess && hasName && (
         <div className="w-full max-w-md">
           <div className="rounded-2xl border bg-card text-card-foreground shadow-sm">
             <div className="p-4 sm:p-6">
@@ -408,6 +411,16 @@ export default function Hero({
           </div>
         </div>
       )}
+
+        {/* Small notice when name is missing */}
+      {!isSuccess && !hasName && (
+        <div className="w-full max-w-md">
+          <div className="rounded-2xl border bg-card text-card-foreground shadow-sm p-4 sm:p-6 text-sm text-muted-foreground">
+            This profile doesn’t have a name yet, so payments are disabled for now.
+          </div>
+        </div>
+      )}
+
 
       {/* Receipt share card (outside card stays the same; header uses your logo) */}
       {isSuccess && (
