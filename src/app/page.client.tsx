@@ -38,7 +38,7 @@ export function LandingPage({ user, amount = 0 }: LandingPageProps) {
       {/* Pass through values received from parent */}
       <Hero initialAmount={amount} user={user} />
 
-      <Demo videoSrc="/demo.mp4" thumbnailSrc="/demo.png" />
+      <Demo videoSrc="" thumbnailSrc="" />
       <Powered />
       <Faq />
       <Footer />
